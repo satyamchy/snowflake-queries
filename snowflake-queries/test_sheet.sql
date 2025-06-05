@@ -24,9 +24,10 @@ grant role  TESTER to role DEVELOPER read-only;
 create role PROJECT_ADMIN;
 grant role  DEVELOPER to role PROJECT_ADMIN read-only;
 grant usage on warehouse_name to role ANALYST;
+--warehouse nahi likha tha sir ne notice kiya
 
 
---------------------------------------------------------------------------
+---------chatgpt answers-----------------------------------------------------------------
 -- Create roles
 CREATE ROLE ANALYST;
 CREATE ROLE TESTER;
