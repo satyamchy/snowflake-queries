@@ -86,6 +86,43 @@ end;
 call proc8(119);
 select * from employees;
  
+-----------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+ 
+create or replace procedure cnt_emp( employees string)
+returns int
+language sql
+as
+declare 
+    answer int default 0;
+ begin
+        -- No dynamic SQL needed; IDENTIFIER() lifts the table name safely
+    select count(*) into :answer from IDENTIFIER(:employees); 
+    -- bind variable as an object identifier
+    return answer;     
+end;
+
+call cnt_emp('employees'); 
+
+
+-----------------------------------------------------------------------------------------
+create or replace procedure cnt_emp1( employees string)
+returns int
+language sql
+declare 
+    query string
+    int result
+as
+    begin
+    query := 'select count(*) from' || employees;
+    execute immediate query into result;
+    return result;
+    end;
+
+--what''s is the error
+call cnt_emp1('employees'); 
+
+-----------------------------------------------------------------------------------------
 
 
     
