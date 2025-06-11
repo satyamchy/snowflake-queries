@@ -127,3 +127,4 @@ select  Dep_Id ,avg(salary) from employee group by(Dep_Id);
  select name , salary from table1 join table2 on table1.id = table2.id where table1.id = table2.id;
 
 
+--75 average 
