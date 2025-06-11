@@ -45,9 +45,9 @@ drop table q1_table_copy;
 CREATE OR REPLACE SEQUENCE my_sequence 
   start with 1 
   increment BY 1
-  MINVALUE 1
-  MAXVALUE 999999
-  CYCLE
+--   MINVALUE 1
+--   MAXVALUE 999999
+--   CYCLE
   order;
 
   create or replace table q3_table(
