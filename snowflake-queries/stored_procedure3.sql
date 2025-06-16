@@ -137,13 +137,152 @@ end;
 call get_employee_names_by_dept(101, 'employees');
 
 ----------------------------------------------------------
+desc table employees;
 
-       CREATE OR REPLACE SEQUENCE my_sequence 
-  START WITH 1 
-  INCREMENT BY 1 
-  MINVALUE 1 
-  MAXVALUE 999999 
-  CYCLE (optional); 
+SELECT first_name FROM employees WHERE dept_id = 102;
+-----------------------------------------------------------------------------------------
+create or replace procedure get_employee_names_by_dept_id(dept_id int)
+returns table (first_name string)
+language sql
+as
+begin
+    return table (
+         select first_name from employees where dept_id = :dept_id
+    );
+end;
+-- identifier(:employees) is used for dynamic SQL, but RETURN TABLE(...) expects a static SQL query.
+        -- Snowflake does not allow dynamic identifiers (like table names) inside RETURN TABLE.
 
-SELECT my_sequence.NEXTVAL; 
-  SELECT my_sequence.NEXTVAL; 
+call get_employee_names_by_dept_id(101);
+---------------------------------------------------------------------
+
+create or replace procedure get_employee_names_by_dept(dept_id int, employees string)
+returns string
+language sql
+as
+declare
+    sql_command string;
+    my_ans_var string default 'error!! data not loaded';
+begin
+     -- Build dynamic SQL
+    sql_command := 'SELECT count(*) FROM ' || :employees || ' WHERE dept_id = ' || :dept_id;
+
+    -- Execute the SQL
+     EXECUTE IMMEDIATE :sql_command into :my_ans_var;
+
+    RETURN  sql_command;
+end;
+
+call get_employee_names_by_dept(101, 'employees');
+    -- -- Return the result of the last query
+--table (first_name string)      return TABLE (RESULT_SCAN(LAST_QUERY_ID()))
+---------------------------------------------------------
+
+
+-------------------------------------------
+
+-------------------------------------------
+
+----------------------------------------------------
+
+
+----------------------------------------------------------
+
+
+---------------------------------------------------------------------
+----------------------------------------------------------------------
+-- finding the first name of employees using cursors
+create or replace procedure get_employee_names( employees string, dept_id int)
+returns string
+language sql
+as
+declare
+    emp_name string;
+    result_string string default '';
+begin
+
+     let res resultset := (select first_name from identifier(:employees) where dept_id = :dept_id );
+     let my_cursor cursor for res;
+     
+    -- No need to open/close cursor explicitly in FOR loop
+    for record in my_cursor do
+        emp_name := record.first_name;
+        result_string := case 
+                            when result_string = '' then emp_name
+                            else result_string || ', ' || emp_name
+                        end;                        
+    end for;
+        
+    return result_string;
+end;
+
+call get_employee_names('employees', 102);
+---------------------------------------------------------------
+-- returning values using cursor
+DECLARE
+  c1 CURSOR FOR SELECT * FROM employees where dept_id = 101;
+BEGIN
+  OPEN c1;
+  RETURN TABLE(RESULTSET_FROM_CURSOR(c1));
+END;
+--------------------------------------------------------------
+---------------------------------------------------------------------
+----------------------------------------------------------------------
+--------------------------------------------------------------------
+-- returning  values in table using resultset
+CREATE OR REPLACE PROCEDURE test_sp()
+RETURNS TABLE(first_name string)
+LANGUAGE SQL
+AS
+  DECLARE
+    res RESULTSET DEFAULT (SELECT first_name FROM employees);
+  BEGIN
+    RETURN TABLE(res);
+  END;
+
+call test_sp();
+--------------------------------------------------------------------
+-- returning dynamic values using resultset
+CREATE OR REPLACE PROCEDURE test_sp_2(employees string , dept_id int)
+RETURNS TABLE(first_name string)
+LANGUAGE SQL
+AS
+  DECLARE
+    res RESULTSET DEFAULT (SELECT first_name FROM identifier(:employees)  where dept_id = :dept_id );
+  BEGIN
+    RETURN TABLE(res);
+  END;
+
+call test_sp_2('employees', 102);
+--------------------------------------------------------------------
+--- table returning using resultset with only first name
+CREATE OR REPLACE PROCEDURE test_sp_dynamic(table_name VARCHAR)
+  RETURNS TABLE(first_name string)
+  LANGUAGE SQL
+AS
+DECLARE
+  res RESULTSET;
+  query VARCHAR DEFAULT 'SELECT first_name FROM IDENTIFIER(?);';
+BEGIN
+  res := (EXECUTE IMMEDIATE :query USING(table_name));
+  RETURN TABLE(res);
+END;
+
+call test_sp_dynamic('employees');
+------------------------------------------------------------------
+--- returning whole data of table with dynamic return type(mentioningn manually)
+CREATE OR REPLACE PROCEDURE test_sp_dynamic_2(table_name VARCHAR  ,id int)
+  RETURNS TABLE(first_name varchar, employee_dept varchar, dept_id int)
+  LANGUAGE SQL
+AS
+DECLARE
+  res RESULTSET;
+BEGIN
+  res := (SELECT * FROM IDENTIFIER(:table_name)  where dept_id = :id);
+  RETURN TABLE(res);
+END;
+
+call test_sp_dynamic_2('employees',  102);
+
+--------------------------------------------------------------------------------
+-----====================================================================================
